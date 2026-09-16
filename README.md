@@ -1,4 +1,25 @@
+KNOWstalgia — mobile-first nostalgia quiz app. See the project's `claude/master-brief.md` and `claude/beta-plan.md` for product context.
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+
+## Phase 1 (Foundation) — what's here
+
+- Design tokens: master brand + all seven decade theme palettes (`src/app/globals.css`, `src/lib/decades.ts`)
+- Typography: Bricolage Grotesque (display) + Plus Jakarta Sans (UI), self-hosted via `@fontsource` so builds don't depend on reaching Google Fonts
+- `KnowstalgiaLogo` component — coded placeholder wordmark per the locked logo spec, swap-in ready for the designer's final SVG
+- Mobile-first global layout (`src/app/layout.tsx`, `src/components/container.tsx`)
+- Beta passcode gate (`src/proxy.ts`, `src/app/gate/`) — set `KNOWSTALGIA_PASSCODE` to enable; unset = no-op
+- `/` is a Foundation-phase proof page (logo + all 7 decade swatches), not the real decade selector — that's Phase 2
+
+## Local development
+
+```bash
+npm install
+npm run dev
+```
+
+Copy `.env.local.example` to `.env.local` and set `KNOWSTALGIA_PASSCODE` to test the gate locally.
+
 
 ## Getting Started
 
