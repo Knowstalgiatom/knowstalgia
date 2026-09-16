@@ -19,11 +19,15 @@
  *    the wrapper with the decorative letterforms hidden from AT.
  */
 
+// Fluid, viewport-relative sizing (rather than fixed breakpoint classes)
+// so the wordmark scales smoothly and never overflows on narrow phones —
+// "Knowstal?ia" is long enough that a fixed text-7xl clips on anything
+// under ~430px wide.
 const sizeStyles = {
-  sm: "text-2xl",
-  md: "text-4xl",
-  lg: "text-6xl",
-  xl: "text-7xl sm:text-8xl",
+  sm: "clamp(1.25rem, 5vw, 1.5rem)",
+  md: "clamp(1.75rem, 7vw, 2.25rem)",
+  lg: "clamp(2.25rem, 9vw, 3.5rem)",
+  xl: "clamp(2.5rem, 11vw, 5.5rem)",
 } as const;
 
 interface LogoProps {
@@ -44,7 +48,8 @@ export function KnowstalgiaLogo({
     <span
       aria-label="KNOWstalgia"
       role="img"
-      className={`inline-flex items-baseline font-display font-extrabold leading-none tracking-tight ${color} ${sizeStyles[size]} ${className}`}
+      className={`inline-flex items-baseline font-display font-extrabold leading-none tracking-tight max-w-full ${color} ${className}`}
+      style={{ fontSize: sizeStyles[size] }}
     >
       <span aria-hidden="true">K</span>
       <span aria-hidden="true">nowstal</span>

@@ -16,7 +16,7 @@ import { NextResponse, type NextRequest } from "next/server";
 const COOKIE_NAME = "knowstalgia_gate";
 const GATE_PATH = "/gate";
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const passcode = process.env.KNOWSTALGIA_PASSCODE;
 
   // No passcode configured for this environment — gate disabled.
