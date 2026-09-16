@@ -1,26 +1,180 @@
 @import "tailwindcss";
 
+/*
+ * KNOWstalgia design tokens
+ * ─────────────────────────
+ * Two layers:
+ *   1. Master brand tokens — always present, define the shared shell
+ *      (background, ink, surface, radius, shadow, spacing rhythm).
+ *   2. Decade theme tokens — set on a `[data-decade]` attribute, scoped
+ *      to whatever DOM subtree is "inside" that decade's world. Swapping
+ *      the attribute value is the entire mechanism for re-skinning the
+ *      app into a different decade (master brief §37-38: one interface,
+ *      the decade changes the atmosphere).
+ *
+ * Colour values are placeholders from the brand mock-up — see
+ * src/lib/decades.ts for the fuller note. Swap-in only, not a rebuild,
+ * once final assets land.
+ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Master brand */
+  --knowstalgia-cream: #f6f1e4;
+  --knowstalgia-paper: #fffdf8;
+  --knowstalgia-ink: #17140f;
+  --knowstalgia-ink-soft: #46413a;
+  --knowstalgia-line: #e4dcc8;
+
+  /* Feedback colours (answer states — used from Phase 3 onward) */
+  --knowstalgia-correct: #1e9c74;
+  --knowstalgia-incorrect: #d6395c;
+
+  /* Spacing / shape rhythm */
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-pill: 999px;
+  --shadow-card: 0 1px 2px rgba(23, 20, 15, 0.04), 0 8px 24px rgba(23, 20, 15, 0.08);
+  --shadow-pop: 0 2px 0 rgba(23, 20, 15, 0.9);
+
+  /* Default decade tokens (used before a decade is chosen — falls back
+     to the 80s palette so nothing renders unstyled). Every value is
+     re-declared per [data-decade] below. */
+  --decade-primary: #e23e8c;
+  --decade-secondary: #8b3fd1;
+  --decade-accent: #2bd8d8;
+  --decade-tint: #dff7f7;
+  --decade-deep: #1b1140;
+  --decade-on-deep: #f2ecff;
 }
 
+[data-decade="60s"] {
+  --decade-primary: #e24b3b;
+  --decade-secondary: #f2803d;
+  --decade-accent: #f6c744;
+  --decade-tint: #fbe9d6;
+  --decade-deep: #c23a2c;
+  --decade-on-deep: #fbf3e4;
+}
+
+[data-decade="70s"] {
+  --decade-primary: #c2601f;
+  --decade-secondary: #8a431f;
+  --decade-accent: #d9a441;
+  --decade-tint: #f0e4ce;
+  --decade-deep: #4a2416;
+  --decade-on-deep: #f2e8d5;
+}
+
+[data-decade="80s"] {
+  --decade-primary: #e23e8c;
+  --decade-secondary: #8b3fd1;
+  --decade-accent: #2bd8d8;
+  --decade-tint: #dff7f7;
+  --decade-deep: #1b1140;
+  --decade-on-deep: #f2ecff;
+}
+
+[data-decade="90s"] {
+  --decade-primary: #1e9c74;
+  --decade-secondary: #0b6e52;
+  --decade-accent: #6fd9a8;
+  --decade-tint: #e4f1df;
+  --decade-deep: #0b4a3a;
+  --decade-on-deep: #eaf7ee;
+}
+
+[data-decade="00s"] {
+  --decade-primary: #2a63d9;
+  --decade-secondary: #13275e;
+  --decade-accent: #6fb3ef;
+  --decade-tint: #e6eef9;
+  --decade-deep: #0d1b45;
+  --decade-on-deep: #eaf1fc;
+}
+
+[data-decade="10s"] {
+  --decade-primary: #f5b518;
+  --decade-secondary: #ef8a1e;
+  --decade-accent: #f5a96b;
+  --decade-tint: #fbf0dc;
+  --decade-deep: #8a4e10;
+  --decade-on-deep: #fef7e8;
+}
+
+[data-decade="20s"] {
+  --decade-primary: #d6395c;
+  --decade-secondary: #6e1530;
+  --decade-accent: #f2a8c6;
+  --decade-tint: #f9e3ec;
+  --decade-deep: #4a0e22;
+  --decade-on-deep: #fbe9f0;
+}
+
+/* Bridge CSS custom properties into Tailwind's theme so utilities like
+   bg-decade-primary / text-ink / rounded-card are available everywhere. */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-cream: var(--knowstalgia-cream);
+  --color-paper: var(--knowstalgia-paper);
+  --color-ink: var(--knowstalgia-ink);
+  --color-ink-soft: var(--knowstalgia-ink-soft);
+  --color-line: var(--knowstalgia-line);
+  --color-correct: var(--knowstalgia-correct);
+  --color-incorrect: var(--knowstalgia-incorrect);
+
+  --color-decade-primary: var(--decade-primary);
+  --color-decade-secondary: var(--decade-secondary);
+  --color-decade-accent: var(--decade-accent);
+  --color-decade-tint: var(--decade-tint);
+  --color-decade-deep: var(--decade-deep);
+  --color-decade-on-deep: var(--decade-on-deep);
+
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-pill: var(--radius-pill);
+
+  --shadow-card: var(--shadow-card);
+  --shadow-pop: var(--shadow-pop);
+
+  --font-display: "Bricolage Grotesque Variable", "Plus Jakarta Sans", ui-sans-serif, sans-serif;
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  * {
+    box-sizing: border-box;
   }
-}
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    background: var(--knowstalgia-cream);
+    color: var(--knowstalgia-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Large, obvious focus states — mobile-first doesn't mean keyboard/
+     switch-control users don't matter (master brief §39). */
+  :focus-visible {
+    outline: 3px solid var(--decade-primary, var(--knowstalgia-ink));
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
 }
