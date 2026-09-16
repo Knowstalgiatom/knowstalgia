@@ -1,34 +1,38 @@
-import Link from "next/link";
-import { Container } from "@/components/container";
-import { getDecade, type DecadeId } from "@/lib/decades";
+import { notFound } from "next/navigation";
+import { getDecade, decades, type DecadeId } from "@/lib/decades";
+import { getQuizzesForDecade } from "@/lib/quizzes";
+import { getQuizQuestions, toPublicQuestion } from "@/lib/questions";
+import { QuizPlayer } from "@/components/quiz-player";
 
 /**
- * Placeholder — the real seven-question engine is Phase 3 (Quiz
- * Engine). This exists so "Start Quiz" from the lobby is a real,
- * working link rather than a dead end, and says plainly what's next
- * rather than silently failing or 404ing.
+ * The Quiz Engine (Phase 3): renders questions one at a time, locks the
+ * selection on tap, validates server-side (see ./actions.ts — correct
+ * answers never reach the browser before submission, master brief §44),
+ * shows feedback, tracks progress, and ends in a bare completion state.
+ * The polished results screen (share, answer pattern, play again) is
+ * Phase 4 — deliberately not built here.
  */
+
+export function generateStaticParams() {
+  return decades.map((decade) => ({ id: decade.id }));
+}
+
 export default async function PlayPage({ params }: PageProps<"/decade/[id]/play">) {
   const { id } = await params;
   const decade = getDecade(id as DecadeId);
+  const quiz = getQuizzesForDecade(decade.id)[0];
+  if (!quiz) notFound();
+
+  const questions = getQuizQuestions(quiz.id).map(toPublicQuestion);
 
   return (
-    <main className="flex-1 flex flex-col items-center justify-center text-center py-16">
-      <Container className="flex flex-col items-center gap-4">
-        <span className="font-display font-extrabold text-2xl">
-          {decade.name} quiz — coming in Phase 3
-        </span>
-        <p className="text-sm opacity-80 max-w-xs">
-          The question engine (seven questions, answer feedback, progress
-          and scoring) isn&apos;t built yet — this is next on the plan.
-        </p>
-        <Link
-          href={`/decade/${decade.id}`}
-          className="text-sm font-semibold underline underline-offset-4"
-        >
-          ‹ Back to the {decade.label} lobby
-        </Link>
-      </Container>
+    <main className="flex-1 flex flex-col">
+      <QuizPlayer
+        decadeLabel={decade.label}
+        lobbyHref={`/decade/${decade.id}`}
+        quizTitle={quiz.title}
+        questions={questions}
+      />
     </main>
   );
 }
