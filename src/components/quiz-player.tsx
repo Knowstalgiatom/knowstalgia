@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import type { PublicQuestion } from "@/lib/questions";
 import { categories } from "@/lib/categories";
 import { submitAnswer } from "@/app/decade/[id]/play/actions";
+import { ResultsScreen } from "@/components/results-screen";
 
 interface AnswerState {
   selectedIndex: number;
@@ -32,7 +32,6 @@ export function QuizPlayer({
   const current = questions[currentIndex];
   const answer = answers[current?.id];
   const isLast = currentIndex === total - 1;
-  const score = Object.values(answers).filter((a) => a.isCorrect).length;
 
   async function handleSelect(optionIndex: number) {
     if (answer || submitting || !current) return;
@@ -60,26 +59,25 @@ export function QuizPlayer({
     }
   }
 
+  function handlePlayAgain() {
+    // Restarts the same demo quiz — the only one this decade has for
+    // now. Once Phase 5 lands more than one quiz per decade, this is
+    // where "play again" would pick the next one instead.
+    setCurrentIndex(0);
+    setAnswers({});
+    setComplete(false);
+  }
+
   if (complete) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center text-center gap-5 px-5 py-16">
-        <span className="text-sm font-semibold opacity-70 uppercase tracking-wide">
-          {decadeLabel} · {quizTitle}
-        </span>
-        <span className="font-display font-extrabold text-6xl">
-          {score}/{total}
-        </span>
-        <p className="text-sm opacity-80 max-w-xs">
-          Quiz complete. The full results screen — answer pattern, sharing,
-          play again — is Phase 4, not built yet.
-        </p>
-        <Link
-          href={lobbyHref}
-          className="mt-2 rounded-md bg-decade-accent text-decade-deep font-display font-extrabold px-6 py-3 shadow-pop active:translate-y-0.5 active:shadow-none transition"
-        >
-          ‹ Back to lobby
-        </Link>
-      </div>
+      <ResultsScreen
+        decadeLabel={decadeLabel}
+        lobbyHref={lobbyHref}
+        quizTitle={quizTitle}
+        questions={questions}
+        answers={answers}
+        onPlayAgain={handlePlayAgain}
+      />
     );
   }
 
