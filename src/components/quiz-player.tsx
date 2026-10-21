@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import type { PublicQuestion } from "@/lib/questions";
 import { categories } from "@/lib/categories";
 import { submitAnswer } from "@/app/decade/[id]/play/actions";
@@ -10,6 +11,7 @@ interface AnswerState {
   selectedIndex: number;
   correctIndex: number;
   isCorrect: boolean;
+  funFact: string;
 }
 
 export function QuizPlayer({
@@ -17,12 +19,15 @@ export function QuizPlayer({
   lobbyHref,
   quizTitle,
   questions,
+  nextQuizHref,
 }: {
   decadeLabel: string;
   lobbyHref: string;
   quizTitle: string;
   questions: PublicQuestion[];
+  nextQuizHref: string;
 }) {
+  const router = useRouter();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, AnswerState>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -44,6 +49,7 @@ export function QuizPlayer({
           selectedIndex: optionIndex,
           correctIndex: result.correctIndex,
           isCorrect: result.correct,
+          funFact: result.funFact,
         },
       }));
     } finally {
@@ -60,12 +66,12 @@ export function QuizPlayer({
   }
 
   function handlePlayAgain() {
-    // Restarts the same demo quiz — the only one this decade has for
-    // now. Once Phase 5 lands more than one quiz per decade, this is
-    // where "play again" would pick the next one instead.
-    setCurrentIndex(0);
-    setAnswers({});
-    setComplete(false);
+    // Decades now have three real quizzes each (Phase 5) — send the
+    // player to the next one in rotation rather than repeating this
+    // one. This navigates to a new URL, so the Quiz Engine re-fetches
+    // fresh questions from the server; QuizPlayer is remounted with a
+    // new `key` (see play/page.tsx) so its own state starts clean.
+    router.push(nextQuizHref);
   }
 
   if (complete) {
@@ -153,6 +159,15 @@ export function QuizPlayer({
             : `Incorrect. The correct answer was ${current.options[answer.correctIndex]}.`
           : ""}
       </div>
+
+      {answer && (
+        <div className="rounded-md bg-white/10 border border-white/15 px-4 py-3.5">
+          <p className="text-xs font-semibold uppercase tracking-wide opacity-60 mb-1">
+            Did you know?
+          </p>
+          <p className="text-sm leading-snug">{answer.funFact}</p>
+        </div>
+      )}
 
       <div className="flex-1" />
 

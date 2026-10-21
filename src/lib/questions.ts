@@ -1,19 +1,20 @@
 import "server-only";
+import { supabase } from "./supabase";
 import { categories } from "./categories";
 
 /**
- * DEMO CONTENT — one shared placeholder question set, reused across
- * every decade's demo quiz, purely to exercise the Quiz Engine (Phase
- * 3): rendering, locking, correct/incorrect feedback, progress,
- * completion. This is deliberately NOT sourced or reviewed against
- * content-guidelines/ — that pipeline is for the real 147-question
- * launch set (Phase 5, beta-plan.md §4.5). Nothing here should be
- * mistaken for finished decade-specific content; it's the same seven
- * questions regardless of which decade you picked.
+ * Real question content, read from Supabase (Phase 5 content backend —
+ * beta-plan.md §4.5). Replaces the old hardcoded seven-question demo
+ * set that was shared across every decade — each quiz now reads its
+ * own 7 fact-checked questions, in the order they were written
+ * (sport → music → tv-film → food-drink → pop-culture →
+ * games-jokes-quotes-logos → knowstalgia-trip), via `sort_order`.
  *
  * `server-only` (the import above) makes this a build error if a
  * Client Component ever imports this module directly — correct answers
- * must never reach the browser (master brief §44, LOCKED).
+ * (and now fun facts, which can also hint at the answer) must never
+ * reach the browser before an answer is submitted (master brief §44,
+ * LOCKED).
  */
 
 export interface Question {
@@ -22,81 +23,90 @@ export interface Question {
   text: string;
   options: [string, string, string, string];
   correctIndex: 0 | 1 | 2 | 3;
+  funFact: string;
 }
 
-export type PublicQuestion = Omit<Question, "correctIndex">;
+/**
+ * What's safe to send to the browser before the player has answered:
+ * no correct answer, and no fun fact either, since a fun fact often
+ * gives the answer away (e.g. "Pelé lifted the trophy..." names the
+ * winning country). Both are only released via submitAnswer, after the
+ * player has locked in a choice.
+ */
+export type PublicQuestion = Omit<Question, "correctIndex" | "funFact">;
 
-const demoQuestions: Question[] = [
-  {
-    id: "demo-1",
-    categoryId: "sport",
-    text: "Which colour card does a football referee show for a sending-off?",
-    options: ["Yellow", "Red", "Blue", "Green"],
-    correctIndex: 1,
-  },
-  {
-    id: "demo-2",
-    categoryId: "music",
-    text: "Which instrument has 88 keys?",
-    options: ["Guitar", "Piano", "Violin", "Flute"],
-    correctIndex: 1,
-  },
-  {
-    id: "demo-3",
-    categoryId: "tv-film",
-    text: "In The Wizard of Oz, what colour are Dorothy's famous shoes?",
-    options: ["Silver", "Gold", "Red", "Blue"],
-    correctIndex: 2,
-  },
-  {
-    id: "demo-4",
-    categoryId: "food-drink",
-    text: "What's the main ingredient in guacamole?",
-    options: ["Avocado", "Tomato", "Pepper", "Onion"],
-    correctIndex: 0,
-  },
-  {
-    id: "demo-5",
-    categoryId: "pop-culture",
-    text: "What shape is a stop sign?",
-    options: ["Circle", "Square", "Octagon", "Triangle"],
-    correctIndex: 2,
-  },
-  {
-    id: "demo-6",
-    categoryId: "games-jokes-quotes-logos",
-    text: "Which fast-food chain's logo is a pair of golden arches?",
-    options: ["Burger King", "McDonald's", "KFC", "Wendy's"],
-    correctIndex: 1,
-  },
-  {
-    id: "demo-7",
-    categoryId: "knowstalgia-trip",
-    text: "Before smartphones, what did most people use to find their way around a new city?",
-    options: ["A paper map", "A compass app", "Satellite radio", "A pager"],
-    correctIndex: 0,
-  },
-];
+interface QuestionRow {
+  id: string;
+  category_id: string;
+  sort_order: number;
+  text: string;
+  options: unknown;
+  correct_index: number;
+  fun_fact: string;
+}
 
-/** categoryId is derived from the shared category order — kept in sync by construction. */
-demoQuestions.forEach((q, i) => {
-  if (q.categoryId !== categories[i].id) {
-    throw new Error(
-      `Demo question ${i} is tagged "${q.categoryId}" but canonical order expects "${categories[i].id}"`,
-    );
+function toQuestion(row: QuestionRow): Question {
+  const options = row.options as string[];
+  if (!Array.isArray(options) || options.length !== 4) {
+    throw new Error(`Question ${row.id} has malformed options: ${JSON.stringify(row.options)}`);
   }
-});
+  if (row.correct_index < 0 || row.correct_index > 3) {
+    throw new Error(`Question ${row.id} has an out-of-range correct_index: ${row.correct_index}`);
+  }
 
-// `quizId` isn't used yet — every quiz shares this one demo set — but it
-// stays in the signature because Phase 5 will use it to select between
-// real per-quiz question sets, and call sites shouldn't need to change.
-export function getQuizQuestions(quizId: string): Question[] {
-  void quizId;
-  return demoQuestions;
+  return {
+    id: row.id,
+    categoryId: row.category_id,
+    text: row.text,
+    options: options as [string, string, string, string],
+    correctIndex: row.correct_index as 0 | 1 | 2 | 3,
+    funFact: row.fun_fact,
+  };
 }
 
-export function getQuestion(questionId: string): Question | undefined {
-  return demoQuestions.find((q) => q.id === questionId);
+export async function getQuizQuestions(quizId: string): Promise<Question[]> {
+  const { data, error } = await supabase
+    .from("questions")
+    .select("id, category_id, sort_order, text, options, correct_index, fun_fact")
+    .eq("quiz_id", quizId)
+    .order("sort_order", { ascending: true });
+
+  if (error) {
+    throw new Error(`Failed to load questions for quiz "${quizId}": ${error.message}`);
+  }
+
+  const questions = (data ?? []).map((row) => toQuestion(row as QuestionRow));
+
+  // Sense-check against the fixed category order (master brief §9) —
+  // every quiz should run sport → music → … → knowstalgia-trip. This
+  // never throws in production (a content mistake shouldn't take the
+  // whole quiz down); it just surfaces loudly in server logs so a
+  // sort_order slip in a future content batch gets noticed fast.
+  questions.forEach((q, i) => {
+    const expected = categories[i]?.id;
+    if (expected && q.categoryId !== expected) {
+      console.error(
+        `Quiz ${quizId}, question ${i + 1}: category is "${q.categoryId}" but expected "${expected}" — check sort_order in the SQL for this quiz.`,
+      );
+    }
+  });
+
+  return questions;
+}
+
+export async function getQuestion(questionId: string): Promise<Question | undefined> {
+  const { data, error } = await supabase
+    .from("questions")
+    .select("id, category_id, sort_order, text, options, correct_index, fun_fact")
+    .eq("id", questionId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Failed to load question "${questionId}": ${error.message}`);
+  }
+  if (!data) return undefined;
+
+  return toQuestion(data as QuestionRow);
 }
 
 export function toPublicQuestion(question: Question): PublicQuestion {

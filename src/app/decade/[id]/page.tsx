@@ -26,7 +26,8 @@ export default async function DecadeLobbyPage({
 }: PageProps<"/decade/[id]">) {
   const { id } = await params;
   const decade = getDecade(id as DecadeId);
-  const quiz = getQuizzesForDecade(decade.id)[0];
+  const quizzes = await getQuizzesForDecade(decade.id);
+  const quiz = quizzes[0];
 
   return (
     <main className="flex-1 flex flex-col py-10">
